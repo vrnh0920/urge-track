@@ -1795,8 +1795,9 @@ function DiscussPage(p){
         setPosts(function(prev){return prev.filter(function(po){return po.id!==payload.old.id;});});
       })
       .on("postgres_changes",{event:"UPDATE",schema:"public",table:"posts"},function(payload){
-        setPosts(function(prev){return prev.map(function(po){return po.id===payload.new.id?Object.assign({},po,payload.new):po;});});
-        setSelPost(function(prev){return prev&&prev.id===payload.new.id?Object.assign({},prev,payload.new):prev;});
+        var rest=Object.assign({},payload.new);delete rest.like_count;
+        setPosts(function(prev){return prev.map(function(po){return po.id===payload.new.id?Object.assign({},po,rest):po;});});
+        setSelPost(function(prev){return prev&&prev.id===payload.new.id?Object.assign({},prev,rest):prev;});
       })
       .subscribe();
     loadLikes();
@@ -1829,17 +1830,16 @@ function DiscussPage(p){
   }
 
   function toggleLike(postId){
-    var delta=likes[postId]?-1:1;
+    var wasLiked=likes[postId];
+    var delta=wasLiked?-1:1;
     setPosts(function(prev){return prev.map(function(po){return po.id===postId?Object.assign({},po,{like_count:Math.max(0,(po.like_count||0)+delta)}):po;});});
     setSelPost(function(prev){return prev&&prev.id===postId?Object.assign({},prev,{like_count:Math.max(0,(prev.like_count||0)+delta)}):prev;});
-    if(likes[postId]){
-      sb.from("post_likes").delete().eq("post_id",postId).eq("user_id",p.user.id).then(function(){
-        setLikes(function(prev){var n=Object.assign({},prev);delete n[postId];return n;});
-      });
+    if(wasLiked){
+      setLikes(function(prev){var n=Object.assign({},prev);delete n[postId];return n;});
+      sb.from("post_likes").delete().eq("post_id",postId).eq("user_id",p.user.id).then(function(){});
     } else {
-      sb.from("post_likes").insert([{post_id:postId,user_id:p.user.id}]).then(function(){
-        setLikes(function(prev){return Object.assign({},prev,{[postId]:true});});
-      });
+      setLikes(function(prev){return Object.assign({},prev,{[postId]:true});});
+      sb.from("post_likes").insert([{post_id:postId,user_id:p.user.id}]).then(function(){});
     }
   }
 
