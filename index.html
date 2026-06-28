@@ -1794,11 +1794,6 @@ function DiscussPage(p){
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"posts"},function(payload){
         setPosts(function(prev){return prev.filter(function(po){return po.id!==payload.old.id;});});
       })
-      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"posts"},function(payload){
-        var rest=Object.assign({},payload.new);delete rest.like_count;
-        setPosts(function(prev){return prev.map(function(po){return po.id===payload.new.id?Object.assign({},po,rest):po;});});
-        setSelPost(function(prev){return prev&&prev.id===payload.new.id?Object.assign({},prev,rest):prev;});
-      })
       .subscribe();
     loadLikes();
     return function(){sb.removeChannel(ch);};
@@ -1829,6 +1824,15 @@ function DiscussPage(p){
     });
   }
 
+  function applyRealLikeCount(postId){
+    sb.from("posts").select("like_count").eq("id",postId).single().then(function(r){
+      if(!r.data)return;
+      var realCount=r.data.like_count;
+      setPosts(function(prev){return prev.map(function(po){return po.id===postId?Object.assign({},po,{like_count:realCount}):po;});});
+      setSelPost(function(prev){return prev&&prev.id===postId?Object.assign({},prev,{like_count:realCount}):prev;});
+    });
+  }
+
   function toggleLike(postId){
     var wasLiked=likes[postId];
     var delta=wasLiked?-1:1;
@@ -1836,10 +1840,10 @@ function DiscussPage(p){
     setSelPost(function(prev){return prev&&prev.id===postId?Object.assign({},prev,{like_count:Math.max(0,(prev.like_count||0)+delta)}):prev;});
     if(wasLiked){
       setLikes(function(prev){var n=Object.assign({},prev);delete n[postId];return n;});
-      sb.from("post_likes").delete().eq("post_id",postId).eq("user_id",p.user.id).then(function(){});
+      sb.from("post_likes").delete().eq("post_id",postId).eq("user_id",p.user.id).then(function(){applyRealLikeCount(postId);});
     } else {
       setLikes(function(prev){return Object.assign({},prev,{[postId]:true});});
-      sb.from("post_likes").insert([{post_id:postId,user_id:p.user.id}]).then(function(){});
+      sb.from("post_likes").insert([{post_id:postId,user_id:p.user.id}]).then(function(){applyRealLikeCount(postId);});
     }
   }
 
