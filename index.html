@@ -1924,7 +1924,7 @@ function DiscussPage(p){
           h("div",{style:{display:"flex",gap:16,marginTop:12,paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.04)"}},
             h("button",{onClick:function(e){e.stopPropagation();toggleLike(post.id);},style:{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:5,color:liked?"#f87171":"#475569",fontSize:12,padding:0,transition:"color .15s"}},
               h("span",{style:{fontSize:14}},liked?"❤️":"🤍"),
-              h("span",{style:{fontWeight:600}},post.like_count||0)
+              h("span",{style:{fontWeight:600}},(post.like_count||0)+" "+(post.like_count===1?"like":"likes"))
             ),
             h("div",{style:{display:"flex",alignItems:"center",gap:5,color:"#475569",fontSize:12}},
               h("span",{style:{fontSize:14}},"💬"),
@@ -2012,8 +2012,7 @@ function PostDetail(p){
       h("div",{style:{display:"flex",gap:16,paddingTop:12,borderTop:"1px solid rgba(255,255,255,0.05)"}},
         h("button",{onClick:function(){p.onLike(post.id);},style:{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,color:liked?"#f87171":"#475569",fontSize:13,padding:0}},
           h("span",{style:{fontSize:16}},liked?"❤️":"🤍"),
-          h("span",{style:{fontWeight:600}},post.like_count||0),
-          h("span",null,liked?"Liked":"Like")
+          h("span",{style:{fontWeight:600}},(post.like_count||0)+" "+(post.like_count===1?"like":"likes"))
         ),
         h("div",{style:{display:"flex",alignItems:"center",gap:6,color:"#475569",fontSize:13}},
           h("span",{style:{fontSize:16}},"💬"),
