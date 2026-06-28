@@ -1792,10 +1792,11 @@ function DiscussPage(p){
         setPosts(function(prev){return[payload.new].concat(prev);});
       })
       .on("postgres_changes",{event:"DELETE",schema:"public",table:"posts"},function(payload){
-        setPosts(function(prev){return prev.filter(function(p){return p.id!==payload.old.id;});});
+        setPosts(function(prev){return prev.filter(function(po){return po.id!==payload.old.id;});});
       })
       .on("postgres_changes",{event:"UPDATE",schema:"public",table:"posts"},function(payload){
-        setPosts(function(prev){return prev.map(function(p){return p.id===payload.new.id?payload.new:p;});});
+        setPosts(function(prev){return prev.map(function(po){return po.id===payload.new.id?Object.assign({},po,payload.new):po;});});
+        setSelPost(function(prev){return prev&&prev.id===payload.new.id?Object.assign({},prev,payload.new):prev;});
       })
       .subscribe();
     loadLikes();
