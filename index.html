@@ -1828,6 +1828,9 @@ function DiscussPage(p){
   }
 
   function toggleLike(postId){
+    var delta=likes[postId]?-1:1;
+    setPosts(function(prev){return prev.map(function(po){return po.id===postId?Object.assign({},po,{like_count:Math.max(0,(po.like_count||0)+delta)}):po;});});
+    setSelPost(function(prev){return prev&&prev.id===postId?Object.assign({},prev,{like_count:Math.max(0,(prev.like_count||0)+delta)}):prev;});
     if(likes[postId]){
       sb.from("post_likes").delete().eq("post_id",postId).eq("user_id",p.user.id).then(function(){
         setLikes(function(prev){var n=Object.assign({},prev);delete n[postId];return n;});
