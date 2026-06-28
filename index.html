@@ -520,14 +520,14 @@ function LogPage(p){
   var os=useState(false);var ok=os[0],setOk=os[1];
   var ls=useState(false);var loading=ls[0],setLoading=ls[1];
   var TL={Motor:["Eye blinking","Neck jerking","Shoulder shrug","Head nodding","Arm flapping","Finger flex","Facial grimace","Hand tapping"],Vocal:["Throat clearing","Sniffing","Humming","Grunting","Clicking","Whistling","Echolalia","Palilalia"]};
-  var TRIGS=["Stress","Anxiety","Fatigue","Excitement","Screen time","Social situation","Boredom","Transition","Other"];
+  var TRIGS=["Feeling stressed","Feeling anxious","Tired or low energy","Excited or hyped","Been on screens","Around people","Bored","Changing activities","Something else"];
   var LOCS=["Eye","Face","Neck","Shoulder","Arm","Hand","Torso","Leg","Throat","Nose","Mouth"];
-  var can=form.label&&form.trigger&&form.location;
+  var can=form.label&&form.location;
 
   function submit(){
     if(!can||loading)return;
     setLoading(true);
-    var entry={user_id:p.user.id,type:form.type,label:form.label,severity:form.severity,trigger:form.trigger,location:form.location,notes:form.notes||"",ts:Date.now()};
+    var entry={user_id:p.user.id,type:form.type,label:form.label,severity:form.severity,trigger:form.trigger||"Unspecified",location:form.location,notes:form.notes||"",ts:Date.now()};
     sb.from("entries").insert([entry]).select().then(function(r){
       setLoading(false);
       if(r.error){alert("Error: "+r.error.message);return;}
@@ -571,10 +571,16 @@ function LogPage(p){
           })
         )
       ),
-      h(Fld,{label:"Trigger"},
+      h(Fld,{label:"What's going on? (optional)"},
         h("div",{style:{display:"flex",flexWrap:"wrap",gap:6}},
           TRIGS.map(function(t){
-            return h("button",{key:t,className:"chip"+(form.trigger===t?" sel":""),onClick:function(){setForm(function(f){return Object.assign({},f,{trigger:t});});}},t);
+            var selArr=form.trigger?form.trigger.split(","):[];
+            return h("button",{key:t,className:"chip"+(selArr.indexOf(t)>-1?" sel":""),onClick:function(){setForm(function(f){
+              var arr=f.trigger?f.trigger.split(","):[];
+              var idx=arr.indexOf(t);
+              if(idx>-1)arr.splice(idx,1);else arr.push(t);
+              return Object.assign({},f,{trigger:arr.join(",")});
+            });}},t);
           })
         )
       ),
@@ -592,7 +598,7 @@ function LogPage(p){
         ok?h("span",{style:{display:"flex",alignItems:"center",gap:6}},h(Icon,{n:"chk"})," Logged!")
           :loading?"Saving...":"Log This Tic"
       ),
-      !can&&h("div",{style:{textAlign:"center",color:"#1e293b",fontSize:11,marginTop:8}},"Select tic, trigger, and location to save")
+      !can&&h("div",{style:{textAlign:"center",color:"#1e293b",fontSize:11,marginTop:8}},"Select tic and location to save")
     )
   );
 }
