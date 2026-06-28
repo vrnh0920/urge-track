@@ -103,15 +103,17 @@ body.light .msub{color:#64748b;}
 body.light .report-h{color:#64748b;}
 @keyframes pulse-ring{0%{transform:scale(1);opacity:.5}100%{transform:scale(2.2);opacity:0}}
 @keyframes spin{to{transform:rotate(360deg)}}
-.bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(5,8,16,0.97);border-top:1px solid rgba(255,255,255,0.08);z-index:200;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom);}
-.bnav-inner{display:flex;align-items:center;justify-content:space-around;height:60px;padding:0 4px;}
-.bnav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:1;height:100%;border:none;background:none;color:#334155;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:color .15s;}
-.bnav-btn.on{color:#60a5fa;}
-.bnav-lbl{font-size:9px;font-family:'Inter',sans-serif;font-weight:500;}
+.hamburger-btn{display:none;position:fixed;top:14px;right:14px;width:44px;height:44px;border-radius:11px;background:rgba(10,15,30,0.92);border:1px solid rgba(255,255,255,0.08);color:#e2e8f0;font-size:20px;align-items:center;justify-content:center;cursor:pointer;z-index:300;-webkit-tap-highlight-color:transparent;}
+.drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:298;opacity:0;pointer-events:none;transition:opacity .25s ease;}
+.drawer-backdrop.open{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:75vw;max-width:300px;background:rgba(5,8,16,0.98);z-index:299;transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column;padding:18px 0;overflow-y:auto;box-shadow:4px 0 30px rgba(0,0,0,0.4);}
+.drawer.open{transform:translateX(0);}
+.drawer-close{align-self:flex-end;margin:0 14px 12px;width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.04);color:#94a3b8;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.drawer-item{display:flex;align-items:center;gap:14px;padding:16px 22px;border:none;background:none;color:#94a3b8;width:100%;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;-webkit-tap-highlight-color:transparent;}
+.drawer-item.on{color:#60a5fa;background:rgba(59,130,246,0.1);}
 @media(max-width:767px){
-  .bnav{display:flex;}
+  .hamburger-btn{display:flex;}
   .sidebar{display:none!important;}
-  .main{padding-bottom:calc(60px + env(safe-area-inset-bottom))!important;}
   .page{padding:18px 14px!important;}
   .auth-card{width:calc(100vw - 32px)!important;padding:28px 20px!important;}
   .auth-wrap{padding:0 16px;align-items:flex-start;padding-top:60px;}
@@ -2067,25 +2069,35 @@ function PostDetail(p){
     )
   );
 }
-function BottomNav(p){
-  var nav=[
-    {id:"dash",n:"home",tip:"Home"},
-    {id:"log",n:"plus",tip:"Log"},
-    {id:"analytics",n:"bar",tip:"Stats"},
-    {id:"calm",n:"wind",tip:"Calm"},
-    {id:"profile",n:"user",tip:"More"},
-    {id:"settings",n:"settings",tip:"Settings"},
-  ];
-  return h("div",{className:"bnav"},
-    h("div",{className:"bnav-inner"},
-      nav.map(function(n){
-        return h("button",{key:n.id,className:"bnav-btn"+(p.page===n.id?" on":""),onClick:function(){p.setPage(n.id);},"data-tour":n.id},
+var MOBILE_NAV=[
+  {id:"dash",n:"home",tip:"Dashboard"},
+  {id:"log",n:"plus",tip:"Log Tic"},
+  {id:"analytics",n:"bar",tip:"Analytics"},
+  {id:"journal",n:"journal",tip:"Daily Journal"},
+  {id:"heatmap",n:"grid",tip:"Heatmap"},
+  {id:"report",n:"doc",tip:"CBIT Report"},
+  {id:"calm",n:"wind",tip:"Calm Tools"},
+  {id:"discuss",n:"discuss",tip:"Community"},
+  {id:"resources",n:"resources",tip:"Resources"},
+  {id:"profile",n:"user",tip:"Profile"},
+  {id:"settings",n:"settings",tip:"Settings"},
+];
+function MobileMenuButton(p){
+  return h("button",{className:"hamburger-btn",onClick:p.onOpen,"aria-label":"Open menu"},"☰");
+}
+function MobileDrawer(p){
+  return [
+    h("div",{key:"backdrop",className:"drawer-backdrop"+(p.open?" open":""),onClick:p.onClose}),
+    h("div",{key:"drawer",className:"drawer"+(p.open?" open":"")},
+      h("button",{className:"drawer-close",onClick:p.onClose,"aria-label":"Close menu"},"✕"),
+      MOBILE_NAV.map(function(n){
+        return h("button",{key:n.id,className:"drawer-item"+(p.page===n.id?" on":""),onClick:function(){p.setPage(n.id);p.onClose();},"data-tour":n.id},
           h(Icon,{n:n.n}),
-          h("span",{className:"bnav-lbl"},n.tip)
+          h("span",null,n.tip)
         );
       })
     )
-  );
+  ];
 }
 
 function SettingsPage(p){
@@ -2390,7 +2402,7 @@ function OnboardingTour(p){
     function measure(){
       var els=document.querySelectorAll('[data-tour="'+TOUR_STEPS[step].target+'"]');
       var found=null;
-      els.forEach(function(e){var r=e.getBoundingClientRect();if(r.width>0&&r.height>0)found=r;});
+      els.forEach(function(e){var r=e.getBoundingClientRect();if(r.width>0&&r.height>0&&r.right>0&&r.left<window.innerWidth)found=r;});
       if(found)setRect(found);
       else if(step<TOUR_STEPS.length-1)setStep(function(s){return s+1;});
       else finish();
@@ -2428,6 +2440,7 @@ function App(){
   var prs=useState(null);var profile=prs[0],setProfile=prs[1];
   var lding=useState(true);var loading=lding[0],setLoading=lding[1];
   var wns=useState(false);var showWhatsNew=wns[0],setShowWhatsNew=wns[1];
+  var dws=useState(false);var drawerOpen=dws[0],setDrawerOpen=dws[1];
 
   useEffect(function(){
     sb.auth.getSession().then(function(r){
@@ -2483,7 +2496,8 @@ function App(){
   return h("div",{className:"app"},
     h(Sidebar,{page:page,setPage:setPage,onSignOut:signOut,onToggleTheme:toggleTheme,isDark:isDark}),
     h("div",{className:"main"},cur),
-    h(BottomNav,{page:page,setPage:setPage}),
+    h(MobileMenuButton,{key:"hamburger",onOpen:function(){setDrawerOpen(true);}}),
+    h(MobileDrawer,{key:"drawer",open:drawerOpen,page:page,setPage:setPage,onClose:function(){setDrawerOpen(false);}}),
     page==="dash"&&profile&&!profile.toured&&h(OnboardingTour,{key:"tour",user:user,setProfile:setProfile}),
     showWhatsNew&&h(WhatsNewModal,{key:"whatsnew",onClose:function(){localStorage.setItem("urgetrack_seen_version",CURRENT_VERSION);setShowWhatsNew(false);}})
   );
